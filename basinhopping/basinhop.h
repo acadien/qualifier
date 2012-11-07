@@ -2,12 +2,14 @@
 #define BASINHOP_H
 
 #include "state.h"
+#include "stdlib.h"
+#include <queue>
 
 //Args for powell function call
 typedef struct ARGST{
   int N;
 }ARGST;
 
-bool MCstep(state*, void*,bool,float);
+void MCstep(state*, void*,float*,std::queue<int>*,float*);
 
 #endif
