@@ -84,16 +84,18 @@ int main(int argc, char **argv){
   return 0;
 }
 
-bool MCstep(state* s, void* args,bool silent,float MCT){
+bool MCstep(state* s, void* args,bool silent,float MCT, queue<int> accepts){
   float origin[3] = {0., 0., 0.};
   state sprime;
   allocState(&sprime,s->N);
-  copyState(s,&sprime); //copy s to sprime
 
-  if(sprime.x[10]!=s->x[10] || sprime.E!=s->E){
-    printf("****ERROR COPY**** %f %f\n",sprime.E,s->E);
-    exit(0);
-  }
+
+  //  if(sprime.x[10]!=s->x[10] || sprime.E!=s->E){
+  //    printf("****ERROR COPY**** %f %f\n",sprime.E,s->E);
+  //    exit(0);
+  //  }
+  while(true){
+    copyState(s,&sprime); //copy s to sprime
 
   //Step out of local minimum!
   for(int i;i<sprime.N;i++){
@@ -109,6 +111,7 @@ bool MCstep(state* s, void* args,bool silent,float MCT){
   float weight=exp(sprime.E/(float)s->N/MCT);
   if(!silent)
     printf("old:%4.4f new:%4.4f | expdelE=%4.4f\n",s->E,sprime.E,weight);
+
   //Monte-Carlo action bam-pow
   bool accept=false;
   if(sprime.E < s->E){
