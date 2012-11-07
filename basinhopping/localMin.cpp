@@ -3,6 +3,8 @@
 #include "math.h"
 
 #include "localMin.h"
+#include "state.h"
+#include "constants.h"
 
 #include "nr.h"
 #include "nrutil.h"
@@ -26,8 +28,45 @@ void initPowell(int NDIM){
   }
 }
 
-void basinPowell(state* s,float (*func)(float [], void*),void* args){
+/* The original Powell's method, unbounded
+void basinPowell(state* s,float ftol,float (*func)(float [], void*),void* args){
   float fret;
-  powell(s->x,xi,s->N*3,1E-4,&(s->iters),&fret,func,args);
+  powell(s->x,xi,s->N*3,ftol,&(s->iters),&fret,func,args);
+  //  printf("%d powell steps\n",s->iters);
   s->E=func(s->x,args);
+}
+*/
+
+
+//Bounded powell's... kind of
+void basinPowell(state* s,float ftol,float (*func)(float [], void*),void* args){
+  float fret;
+  float origin[3]={0.,0.,0.};
+  powell(s->x,xi,s->N*3,ftol,&(s->iters),&fret,func,args);
+
+  //First re-center about the center of mass.
+  float com[3]={0.,0.,0.};
+  for(int i;i<s->N;i++){
+    com[0]+=s->x[3*i];
+    com[1]+=s->x[3*i+1];
+    com[2]+=s->x[3*i+2];
+  }
+  for(int i;i<3;i++)
+    com[i]/=s->N;
+  for(int i;i<s->N;i++){
+    s->x[3*i]-=com[0];
+    s->x[3*i+1]-=com[1];
+    s->x[3*i+2]-=com[2];
+  }
+
+  s->E=func(s->x,args);
+  //How many atoms outside the sphere?
+  //int count=0;
+  
+    
+    //if(dist((float*)origin,&(s->x[3*i])) > boundr){
+    //  count++;
+    //}
+  
+  //printf("outside atoms %d\n",count);
 }

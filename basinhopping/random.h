@@ -13,5 +13,6 @@ namespace Random{
 
 void initrng();
 float mrand();//Mersenne Twister random number
+float mnormrand(float);//Guassian random number
 
 #endif

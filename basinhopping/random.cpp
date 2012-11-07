@@ -21,3 +21,7 @@ void initrng(){
 float mrand(){//Mersenne Twister random number
   return gsl_rng_uniform(randstor);
 }  
+
+float mnormrand(float sig){//Guassian random number
+  return gsl_ran_gaussian(randstor,sig);
+}

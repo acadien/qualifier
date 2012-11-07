@@ -11,12 +11,11 @@ typedef struct state{
   int iters;//iterations for basin optimization
 }state;
 
-//Local variables, save on allocation time...
-namespace State{
-  static float statex,statey,statez;
-}
-
+void allocState(state*,int);
 void initState(state*,int);
 void printState(state*,FILE*);
-float dist(float*,float*);
+void printStateBounds(state*, FILE*);
+void printStateEnergy(state*, FILE*);
+void printStateVolume(state*, FILE*);
+void copyState(state*,state*);
 #endif

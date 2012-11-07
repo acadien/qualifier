@@ -8,5 +8,6 @@ namespace Potential{
   static const float feps=4.0*1.0;
 }
 float LJpot(float* cs, void* args);
+float LJpotPunish(float* cs, void* args);
 
 #endif

@@ -8,6 +8,6 @@ namespace Powell{
 }
 
 void initPowell(int);
-void basinPowell(state* s,float (*func)(float [], void*),void* args);
+void basinPowell(state* s,float ftol, float (*func)(float [], void*),void* args);
 
 #endif
