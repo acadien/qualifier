@@ -7,12 +7,15 @@
 #include "constants.h"
 #include "state.h"
 #include "structure.h"
+#include "potential.h"
 
 using namespace std;
 
 void allocState(state* s,int N){
   s->N=N;
   s->x=(float*)malloc(sizeof(float)*3*N);  
+  for(int i=0;i<3;i++)
+    s->com[0]=0.;
 }
 
 void initState(state* s,int N){
@@ -20,46 +23,33 @@ void initState(state* s,int N){
 
   int failcount=0;
 
-  float r,theta,phi,u,v;
-  float tx,ty,tz; //test location
+  float r,theta,phi;
+  float* x=s->x; //test location
   bool found=false;
 
-  for(int i=0;i<N;i++){
-  
-    found=false;
-    failcount=0;
-    while(!found){
-      if(failcount++ > N*10000){
-	printf("Too many trials on initialization, try a larger bounding sphere. %d\n",i);
-	exit(0);
-      }
-      found=true;
+  ARGST args;
+  args.N=N;
 
+  failcount=0;
+  found=false;
+  while(!found){
+    found=true;
+    if(failcount++ > N*10000){
+      printf("Too many trials on initialization, try a larger bounding sphere.\n");
+      exit(0);
+    }    
+    for(int i=0;i<N;i++){
       //Select some random coordinates
       r=boundr*mrand();
-      u=mrand();
-      v=mrand();
-      theta=2*M_PI*u;
-      phi=acos(2.0*v-1.0);
-      tx=r*sin(theta)*cos(phi);
-      ty=r*sin(theta)*sin(phi);
-      tz=r*cos(theta);
-
-      //Test coordinates      
-      for(int j=0;j<i;j++){
-	if( dist(&(s->x[i]),&(s->x[j])) < mindist ){
-	  found=false;
-	  break;
-	}
-      }
+      theta=2*M_PI*mrand();
+      phi=acos(2.0*mrand()-1.0);
+      x[i*3]=r*sin(theta)*cos(phi);
+      x[i*3+1]=r*sin(theta)*sin(phi);
+      x[i*3+2]=r*cos(theta);
     }
 
-    //Set the coordinates
-    //printf("%d\n",i);
-    s->x[3*i]=tx;
-    s->x[3*i+1]=ty;
-    s->x[3*i+2]=tz;
-    
+    if(LJpot(x,(void*)&args)>5E8)
+      found=false;
   }
   
   return;
@@ -98,8 +88,8 @@ void printStateBounds(state *s, FILE *fp){
       mxz=xs[3*i+2];
   }
   fprintf(fp,"BOUNDS\n");
-  fprintf(fp,"delx= %6.6f\n",mxx-mnx);
-  fprintf(fp,"dely= %6.6f\n",mxy-mny);
+  fprintf(fp,"delx= %6.6f | ",mxx-mnx);
+  fprintf(fp,"dely= %6.6f | ",mxy-mny);
   fprintf(fp,"delz= %6.6f\n",mxz-mnz);
 }
 

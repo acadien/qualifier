@@ -5,6 +5,7 @@
 
 namespace Powell{
   static float **xi;
+  //static const float **xi;
 }
 
 void initPowell(int);

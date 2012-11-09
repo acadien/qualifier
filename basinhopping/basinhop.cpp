@@ -1,7 +1,7 @@
 #include "stdlib.h"
 #include "stdio.h"
-#include "gsl/gsl_math.h"
 #include <queue>
+#include "gsl/gsl_math.h"
 //mine
 #include "constants.h"
 #include "random.h"
@@ -14,30 +14,45 @@
 using namespace std;
 
 int main(int argc, char **argv){
-  float ftol;
   state s;
+  state* basins;
 
-  //Initialize RNG
+  //Settings
+  int aLen=500;  //how big should the window average be
+  int nAtom=38; //how many atoms
+  //Basin
+  float ftol=0.2; //set the tolerance on basin finding algo
+  //MC
+  int initLoop=100, hopLoop=1000; //MC loop lengths
+  float MCT=0.8;                  //Monte Carlo Temperature
+  float MCalpha=0.36;             //Monte Carlo initial jump length
+
+  //Initialize random numbers (mersenne twist)
   initrng();
 
   //Initialize cluster
-  initState(&s,35);
+  initState(&s,nAtom);
+  basins=(state*)malloc(sizeof(state)*hopLoop);
+  for(int i=0;i<hopLoop;i++)
+    allocState(&(basins[i]),nAtom);
   ARGST args;
   args.N=s.N;
-  s.E=LJpot(s.x,(void*)&args);
-  FILE* fp=stdout;
 
-  //Initialize acceptance queue for dynamically altering temperature
+  //Initalize logging
+  s.E=LJpotPunish(s.x,(void*)&args);
+  FILE* fp=stdout;
+  FILE *logf;
+  logf = fopen("finalstate.dat","w");
+
+  //Initialize acceptance queue for dynamically altering variation parameter
   std::queue<int> accepts;
-  int aLen=50;//how big should the window average be
   float acceptAvg=0.5;
   for(int i=0;i<aLen/2;i++){
     accepts.push(1);
     accepts.push(0);
   }
 
-  //Prepare optimizer
-  float MCT=0.8;
+  //Prepare optimizers
   initPowell(s.N*3);
   printf("Initial\n");
   printStateVolume(&s,fp);
@@ -45,31 +60,18 @@ int main(int argc, char **argv){
   printf("\n");
 
   /*
-  //TEST - must bound powell's method
-  ftol=1E1;
-  basinPowell(&s,ftol,LJpotPunish,(void*)&args);
-  printf("Powell Reduced Initial.\n");
-  printStateVolume(&s,fp);
-  printStateEnergy(&s,fp);
-  printStateBounds(&s,fp);
-  printf("\n");
-  */
-    
   //Initial cluster will be horrible, run it through some MC to reduce total energy
-  int initLoop=1000;
-  for(int i;i<initLoop;i++){
-    //    s.E=LJpot(s.x,(void*)&args);
-    MCstep(&s,(void*)&args,&MCT,(std::queue<int>*)&accepts,&acceptAvg);
-  }
+  for(int i=0;i<initLoop;i++)
+    MCstep(&s,(void*)&args,MCT,MCalpha,&accepts,&acceptAvg);
   printf("Reduced Initial.\n");
   printStateVolume(&s,fp);
   printStateEnergy(&s,fp);
   printStateBounds(&s,fp);
   printf("\n");
+  */
 
   //Obtain your first basin!
-  ftol=1.0;
-  basinPowell(&s,ftol,LJpotPunish,(void*)&args);
+  basinPowell(&s,ftol,LJpot,(void*)&args);
   printf("Powell Reduced Initial.\n");
   printStateVolume(&s,fp);
   printStateEnergy(&s,fp);
@@ -77,49 +79,73 @@ int main(int argc, char **argv){
   printf("\n");
 
   //Let the basin hopping begin
-  int testLoop=1000;
-  for(int i;i<testLoop;i++){
-    MCstep(&s,(void*)&args,&MCT,&accepts,&acceptAvg);
-    printf("acceptance rate=%3.3f,  temperature=%4.4f\n",acceptAvg,MCT);
-    basinPowell(&s,ftol,LJpotPunish,(void*)&args);
+  //  MCalpha=0.1;             //Monte Carlo initial jump length
+  float msdnow;
+  for(int i=0;i<hopLoop;i++){
+
+    MCstep(&s,(void*)&args,ftol,MCT,MCalpha,&accepts,&acceptAvg,true);
+
+    //basinPowell(&s,ftol,LJpot,(void*)&args);
+
+    copyState(&s,&(basins[i]));
+
+    if(i>0)
+      msdnow=msd(&basins[i],&basins[i-1]);
+
+    fprintf(logf,"NAtoms\n%d\n",nAtom);
+    printState(&s,logf);
+
+    fprintf(logf,"MSD\n");
+    if(i==0)
+      fprintf(logf,"0\n");
+    else
+      fprintf(logf,"%f\n",msdnow);
+
+    printf("****************************\n");
+    printf("%d\n",i);
+    if(i>0)
+      printf("msd=%f stepsize=%f acceptRatio=%f\n",msdnow,MCalpha,acceptAvg);
     printStateEnergy(&s,fp);
     printStateBounds(&s,fp);
+    printf("****************************\n");
+
   }
 
   printStateBounds(&s,fp);
   
-  FILE *logf;
-  logf = fopen("finalstate.dat","w");
-  printState(&s,logf);
   return 0;
 }
 
-void MCstep(state* s, void* args,float* MCT, std::queue<int>* accepts, float* acceptAvg){
-  bool silent=true;
-  float origin[3] = {0., 0., 0.};
+void MCstep(state* s, void* args,float ftol, float& MCT, float& MCalpha, std::queue<int>* accepts, float* acceptAvg, bool silent){
+
+  int cnt=0;
   state sprime;
-  allocState(&sprime,s->N);
+  float alphaStep=0.0002,alphaRatio=0.99;
+  initState(&sprime,s->N);
+  initPowell(s->N*3);
 
-
-  //  if(sprime.x[10]!=s->x[10] || sprime.E!=s->E){
-  //    printf("****ERROR COPY**** %f %f\n",sprime.E,s->E);
-  //    exit(0);
-  //  }
   while(true){
-    copyState(s,&sprime); //copy s to sprime
+    cnt++;
+    //Salt atoms that are outside of sphere boundary
+    salt(s);
 
     //Step out of local minimum!
-    for(int i;i<sprime.N;i++){
-      //    while(true){
-      sprime.x[3*i] += (mrand()-0.5)*2.0*MCalpha*0.5;
-      sprime.x[3*i+1] += (mrand()-0.5)*2.0*MCalpha*0.5;
-      sprime.x[3*i+2] += (mrand()-0.5)*2.0*MCalpha*0.5;
-      //if(dist(origin,
+    for(int i=0;i<sprime.N;i++){
+      sprime.x[3*i] = s->x[3*i]+(mrand()-0.5)*2.0*MCalpha*0.5;
+      sprime.x[3*i+1] = s->x[3*i+1]+(mrand()-0.5)*2.0*MCalpha*0.5;
+      sprime.x[3*i+2] = s->x[3*i+2]+(mrand()-0.5)*2.0*MCalpha*0.5;
+      /*
+      sprime.x[3*i] = s->x[3*i]+mnormrand(MCalpha/10.);
+      sprime.x[3*i+1] = s->x[3*i+1]+mnormrand(MCalpha/10.);
+      sprime.x[3*i+2] = s->x[3*i+2]+mnormrand(MCalpha/10.);
+      */
     }
-    sprime.E=LJpotPunish(sprime.x,args);
+    
+    basinPowell(&sprime,ftol,LJpot,args);
 
-    //  float weight=exp(-(s->E-sprime.E)/MCT/s->N);
-    float weight=exp(sprime.E / (float)s->N / *MCT);
+    //sprime.E=LJpot(sprime.x,args);
+
+    float weight=exp( -(sprime.E - s->E) / MCT );
     if(!silent)
       printf("old:%4.4f new:%4.4f | expdelE=%4.4f\n",s->E,sprime.E,weight);
 
@@ -131,7 +157,7 @@ void MCstep(state* s, void* args,float* MCT, std::queue<int>* accepts, float* ac
       copyState(&sprime,s);
       accept=true;
     }else 
-      if(weight<FLT_MAX && mrand()>=weight){
+      if(mrand()<weight){
 	if(!silent)
 	  printf("higher energy\n");
 	copyState(&sprime,s);
@@ -152,10 +178,28 @@ void MCstep(state* s, void* args,float* MCT, std::queue<int>* accepts, float* ac
       accepts->push(0);
 
     //Update the Monte-Carlo Temperature according to acceptance
-    if(*acceptAvg>0.52)
-      *MCT+=0.1;
-    else if (*acceptAvg < 0.48)
-      *MCT-=0.1;
+    if(*acceptAvg > 0.52)
+      MCalpha/=alphaRatio;
+    else if (MCalpha > alphaStep && *acceptAvg < 0.48)
+      MCalpha*=alphaRatio;
+    
+    if(!silent){
+      printf("inside: acceptAvg=%f MCT=%f           MCalpha=%f\n",*acceptAvg,MCT,MCalpha);
+      printf("===========================\n\n");
+    }
+    if(accept)
+      break;
   }
+  //  if(!silent)
+  printf("cnt=%d\n",cnt);
 }
 
+void resetWindow(std::queue<int>* accepts,float* acceptAvg, int aLen){
+  for(int i=0;i<aLen/2;i++){
+    accepts->pop();
+    accepts->pop();
+    accepts->push(1);
+    accepts->push(0);
+  }
+  *acceptAvg=0.5;
+}

@@ -4,6 +4,5 @@
 //Declare constant values here.
 static const float boundr=5.5;
 static const float mindist=0.08;
-static const float MCalpha=0.36;
 
 #endif

@@ -9,6 +9,7 @@ typedef struct state{
   float *x; //positions
   float E; //potential energy
   int iters;//iterations for basin optimization
+  float com[3];
 }state;
 
 void allocState(state*,int);

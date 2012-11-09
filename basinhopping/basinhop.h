@@ -1,15 +1,11 @@
 #ifndef BASINHOP_H
 #define BASINHOP_H
-
-#include "state.h"
-#include "stdlib.h"
 #include <queue>
+#include "stdlib.h"
+#include "state.h"
+#include "potential.h"
 
-//Args for powell function call
-typedef struct ARGST{
-  int N;
-}ARGST;
-
-void MCstep(state*, void*,float*,std::queue<int>*,float*);
+void MCstep(state*, void*,float,float&,float&,std::queue<int>*,float*,bool);
+void resetWindow(std::queue<int>*,float*,int);
 
 #endif

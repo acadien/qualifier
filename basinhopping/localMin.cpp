@@ -37,7 +37,6 @@ void basinPowell(state* s,float ftol,float (*func)(float [], void*),void* args){
 }
 */
 
-
 //Bounded powell's... kind of
 void basinPowell(state* s,float ftol,float (*func)(float [], void*),void* args){
   float fret;
@@ -60,13 +59,4 @@ void basinPowell(state* s,float ftol,float (*func)(float [], void*),void* args){
   }
 
   s->E=func(s->x,args);
-  //How many atoms outside the sphere?
-  //int count=0;
-  
-    
-    //if(dist((float*)origin,&(s->x[3*i])) > boundr){
-    //  count++;
-    //}
-  
-  //printf("outside atoms %d\n",count);
 }

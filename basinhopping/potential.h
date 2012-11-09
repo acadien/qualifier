@@ -7,6 +7,12 @@ namespace Potential{
   static const float sig=1.0;
   static const float feps=4.0*1.0;
 }
+
+//Args for LJ/powell function call
+typedef struct ARGST{
+  int N;
+}ARGST;
+
 float LJpot(float* cs, void* args);
 float LJpotPunish(float* cs, void* args);
 
