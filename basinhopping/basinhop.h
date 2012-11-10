@@ -7,5 +7,6 @@
 
 void MCstep(state*, state*,void*,float,float&,float&,std::queue<int>*,float*,bool);
 void resetWindow(std::queue<int>*,float*,int);
+void loadIdeal(state* sideal,FILE* ifile);
 
 #endif

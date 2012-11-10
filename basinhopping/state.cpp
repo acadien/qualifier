@@ -28,7 +28,7 @@ void allocState(state* s,int N){
   s->E=0;
   s->N=N;
   s->msd=0.;
-  s->msdIdeal=0.;//TO IMPLEMENT
+  s->msdIdeal=0.;
 }
 
 void freeState(state* s){ 
@@ -76,7 +76,7 @@ void initState(state* s,int N){
 }
 
 void printState(state* s,FILE *fp){
-  fprintf(fp,"NAtoms\n%d\n",s->N);
+  fprintf(fp,"NAtoms\n%d\n",(int)s->N);
   printStateEnergy(s,fp);
   printStateVolume(s,fp);
   printStateBounds(s,fp);
@@ -84,8 +84,11 @@ void printState(state* s,FILE *fp){
   for(int i=0;i<s->N;i++){
     fprintf(fp,"% 5.5f % 5.5f % 5.5f\n",s->x[3*i+1],s->x[3*i+2],s->x[3*i+3]);
   }
-  fprintf(fp,"MSD\n");
+  fprintf(fp,"MSD Neighbor\n");
   fprintf(fp,"%f\n",s->msd);
+  fprintf(fp,"MSD Ideal\n");
+  fprintf(fp,"%f\n",s->msdIdeal);
+  fprintf(fp,"======================\n");
 }
 
 void printStateEnergy(state* s, FILE *fp){

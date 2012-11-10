@@ -1,6 +1,7 @@
-#include "stdlib.h"
-#include "stdio.h"
+#include <stdlib.h>
+#include <stdio.h>
 #include <queue>
+#include <string>
 #include "gsl/gsl_math.h"
 //mine
 #include "constants.h"
@@ -15,6 +16,7 @@ using namespace std;
 int main(int argc, char **argv){
   state s;
   state sprime;
+  state sideal;
   state* basins;
 
   //Settings
@@ -23,12 +25,22 @@ int main(int argc, char **argv){
   //Basin
   float ftol=0.01; //set the tolerance on basin finding algo
   //MC
-  int initLoop=1000, hopLoop=5000; //MC loop lengths
+  int initLoop=10, hopLoop=5; //MC loop lengths
   float MCT=0.8;                  //Monte Carlo Temperature
-  float MCalpha=0.30;             //Monte Carlo initial jump length
+  float MCalpha=0.25;             //Monte Carlo initial jump length
 
   //Initialize random numbers (mersenne twist)
   initrng();
+
+  //Load up ideal cluster
+  char buf[5];
+  sprintf(buf,"%d",nAtom);
+  string idealfilename=buf;
+  idealfilename.append("_ideal.dat");
+  FILE *idealfp;
+  idealfp = fopen((char*)idealfilename.c_str(),"r");
+  initState(&sideal,nAtom);
+  loadIdeal(&sideal,idealfp);
 
   //Initialize cluster
   initState(&s,nAtom);
@@ -90,14 +102,13 @@ int main(int argc, char **argv){
       msdnow=msd(&basins[i],&basins[i-1]);
       basins[i].msd=msdnow;
     }
-    msdnow=msd(&basins[i],&basins[i+1]);
+    msdnow=msd(&basins[i],&sideal);
     basins[i].msdIdeal=msdnow;
-    
 
     printf("****************************\n");
     printf("%d\n",i);
     if(i>0)
-      printf("msd=%f stepsize=%f acceptRatio=%f\n",msdnow,MCalpha,acceptAvg);
+      printf("msd ideal=%f stepsize=%f acceptRatio=%f\n",msdnow,MCalpha,acceptAvg);
     printStateEnergy(&s,fp);
     printStateBounds(&s,fp);
     printf("****************************\n");
@@ -119,8 +130,9 @@ int main(int argc, char **argv){
     freeState(&(basins[i]));
   free(basins);
   freeState(&sprime);
+  freeState(&sideal);
   freeState(&s);
-
+  
   return 0;
 }
 
@@ -182,10 +194,10 @@ void MCstep(state* s, state* sprime,void* args,float ftol, float& MCT, float& MC
       accepts->push(0);
 
     //Update the Monte-Carlo Temperature according to acceptance
-    if(accept)  
-      MCalpha/=alphaRatio;    
-    else if (MCalpha > alphaStep)
-      MCalpha*=alphaRatio;
+    //if(accept)  
+    //  MCalpha/=alphaRatio;    
+    //else if (MCalpha > alphaStep)
+    //  MCalpha*=alphaRatio;
     
     if(!silent){
       printf("inside: acceptAvg=%f MCT=%f           MCalpha=%f\n",*acceptAvg,MCT,MCalpha);
@@ -200,7 +212,14 @@ void MCstep(state* s, state* sprime,void* args,float ftol, float& MCT, float& MC
 
 
 void loadIdeal(state* sideal,FILE* ifile){
-  int N;
+  int N=sideal->N,dummy;
+  float x,y,z;
+  for(int i=0;i<N;i++){
+    dummy=fscanf(ifile,"%f %f %f\n",&x,&y,&z);
+    sideal->x[3*i+1]=x;
+    sideal->x[3*i+1]=y;
+    sideal->x[3*i+1]=z;
+  }
 }
 
 void resetWindow(std::queue<int>* accepts,float* acceptAvg, int aLen){

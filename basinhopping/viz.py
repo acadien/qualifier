@@ -9,7 +9,8 @@ data=open(sys.argv[1],"r").readlines()
 if data[0][0]=="#":
     data.pop(0)
 atoms=list()
-msds=list()
+msdNeighb=list()
+msdIdeal=list()
 energies=list()
 volumes=list()
 natoms=list()
@@ -23,11 +24,12 @@ while len(data)>1:
     n=pos+9+natoms[-1]
     a=data[pos+9:n]
     atoms.append(map(lambda x:map(float,x.split()),a))
-    msds.append(float(data[n+1]))
-    data=data[n+2:]
+    msdNeighb.append(float(data[n+1]))
+    msdIdeal.append(float(data[n+3]))
+    data=data[n+5:]
 
 optimE={38:-173.252,76:-402.384,104:-582.038}
-nState=len(msds)
+nState=len(msdNeighb)
 na=natoms[-1]
 
 #Figure 1: MSD & Energy vs step #
@@ -37,7 +39,7 @@ pl.ylabel("Energy")
 pl.plot([0,nState],[optimE[na]/na,optimE[na]/na],color="black",ls="--",label="Optimal Energy/atom")
 pl.plot(range(nState),[i/na for i in energies],label="Energy/atom")
 pl.subplot(212)
-pl.plot(range(nState),msds,label="MSD")
+pl.plot(range(nState),msdIdeal,label="MSD-ideal")
 pl.legend(loc=0)
 pl.xlabel("Step")
 
