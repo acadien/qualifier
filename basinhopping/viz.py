@@ -2,16 +2,19 @@
 
 import pylab as pl
 import sys
+#mine
+from poscarsPlot import plotsimulation
 
 data=open(sys.argv[1],"r").readlines()
-data.pop(0) #drop the header
+if data[0][0]=="#":
+    data.pop(0)
 atoms=list()
 msds=list()
 energies=list()
 volumes=list()
 natoms=list()
 
-bounds=[[11.0,0,0],[0,11.0,0],[0,0,11.0]]
+basis=[[11.0,0,0],[0,11.0,0],[0,0,11.0]]
 pos=0
 while len(data)>1:
     natoms.append(int(data[pos+1]))
@@ -23,8 +26,26 @@ while len(data)>1:
     msds.append(float(data[n+1]))
     data=data[n+2:]
 
+optimE={38:-173.252,76:-402.384,104:-582.038}
 nState=len(msds)
-nAtom=natoms[-1]
+na=natoms[-1]
+
+#Figure 1: MSD & Energy vs step #
+pl.subplot(211)
+pl.title("%d Atoms"%na)
+pl.ylabel("Energy")
+pl.plot([0,nState],[optimE[na]/na,optimE[na]/na],color="black",ls="--",label="Optimal Energy/atom")
+pl.plot(range(nState),[i/na for i in energies],label="Energy/atom")
+pl.subplot(212)
 pl.plot(range(nState),msds,label="MSD")
-pl.plot(range(nState),[i/nAtom for i in energies],label="Energy")
+pl.legend(loc=0)
+pl.xlabel("Step")
+
+
+#Figure 2: Visualize Lowest Energy Configuration
+fig2=pl.figure()
+#a2=fig2.add_subplot(111,project='3d')
+
+iatoms=atoms[energies.index(min(energies))]
+plotsimulation(basis,iatoms,[na],fig2)
 pl.show()

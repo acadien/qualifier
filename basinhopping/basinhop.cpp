@@ -21,11 +21,11 @@ int main(int argc, char **argv){
   int aLen=100;  //how big should the window average be
   int nAtom=38; //how many atoms
   //Basin
-  float ftol=0.1; //set the tolerance on basin finding algo
+  float ftol=0.01; //set the tolerance on basin finding algo
   //MC
-  int initLoop=100, hopLoop=100; //MC loop lengths
+  int initLoop=1000, hopLoop=5000; //MC loop lengths
   float MCT=0.8;                  //Monte Carlo Temperature
-  float MCalpha=0.36;             //Monte Carlo initial jump length
+  float MCalpha=0.30;             //Monte Carlo initial jump length
 
   //Initialize random numbers (mersenne twist)
   initrng();
@@ -59,17 +59,16 @@ int main(int argc, char **argv){
   printStateEnergy(&s,fp);
   printf("\n");
 
-  /*
   //Initial cluster will be horrible, run it through some MC to reduce total energy
   for(int i=0;i<initLoop;i++)
-    MCstep(&s,(void*)&args,MCT,MCalpha,&accepts,&acceptAvg);
+    MCstep(&s,&sprime,(void*)&args,ftol,MCT,MCalpha,&accepts,&acceptAvg,true);
   printf("Reduced Initial.\n");
   printStateVolume(&s,fp);
   printStateEnergy(&s,fp);
   printStateBounds(&s,fp);
   printf("\n");
-  */
-
+  
+  /*
   //Obtain your first basin!
   basinPowell(&s,ftol,LJpot,(void*)&args);
   printf("Powell Reduced Initial.\n");
@@ -77,7 +76,7 @@ int main(int argc, char **argv){
   printStateEnergy(&s,fp);
   printStateBounds(&s,fp);
   printf("\n");
-  
+  */
 
   //Let the basin hopping begin
   float msdnow;
@@ -87,17 +86,13 @@ int main(int argc, char **argv){
 
     copyState(&s,&(basins[i]));
 
-    if(i>0)
+    if(i>0){
       msdnow=msd(&basins[i],&basins[i-1]);
-
-    fprintf(logf,"NAtoms\n%d\n",nAtom);
-    printState(&s,logf);
-
-    fprintf(logf,"MSD\n");
-    if(i==0)
-      fprintf(logf,"0\n");
-    else
-      fprintf(logf,"%f\n",msdnow);
+      basins[i].msd=msdnow;
+    }
+    msdnow=msd(&basins[i],&basins[i+1]);
+    basins[i].msdIdeal=msdnow;
+    
 
     printf("****************************\n");
     printf("%d\n",i);
@@ -108,8 +103,18 @@ int main(int argc, char **argv){
     printf("****************************\n");
   }
 
-  printStateBounds(&s,fp);
+  //Reoptimize with higher accuracy
+  ftol=1e-6;
+  float estart;
+  for(int i=0;i<hopLoop;i++){
+    estart=basins[i].E;
+    basinPowell(&(basins[i]),ftol,LJpot,(void*)&args);
+    printf("delE=%f\n",estart-basins[i].E);
+    printState(&(basins[i]),logf);
+  }
 
+  msdnow=msd(&basins[0],&basins[hopLoop-1]);
+  printf("Total MSD=%f\n",msdnow);
   for(int i=0;i<hopLoop;i++)
     freeState(&(basins[i]));
   free(basins);
@@ -177,10 +182,8 @@ void MCstep(state* s, state* sprime,void* args,float ftol, float& MCT, float& MC
       accepts->push(0);
 
     //Update the Monte-Carlo Temperature according to acceptance
-    //if(*acceptAvg > 0.52)
     if(accept)  
       MCalpha/=alphaRatio;    
-    //else if (MCalpha > alphaStep && *acceptAvg < 0.48)
     else if (MCalpha > alphaStep)
       MCalpha*=alphaRatio;
     
@@ -193,6 +196,11 @@ void MCstep(state* s, state* sprime,void* args,float ftol, float& MCT, float& MC
   }
   //  if(!silent)
   printf("cnt=%d\n",cnt);
+}
+
+
+void loadIdeal(state* sideal,FILE* ifile){
+  int N;
 }
 
 void resetWindow(std::queue<int>* accepts,float* acceptAvg, int aLen){

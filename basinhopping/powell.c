@@ -2,7 +2,7 @@
 #define NRANSI
 #include "nrutil.h"
 #define TINY 1.0e-25
-#define ITMAX 200
+#define ITMAX 1000
 
 void powell(float* p, float **xi, int n, float ftol, int *iter, float *fret,
 	    float (*func)(float [], void*),void* args)
