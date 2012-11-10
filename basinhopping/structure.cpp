@@ -2,7 +2,7 @@
 #include "structure.h"
 #include "state.h"
 #include "constants.h"
-#include "potential.h"
+#include "localMin.h"
 #include "random.h"
 
 using namespace std;
@@ -58,6 +58,7 @@ float msd(state* a, state* b){
   return sqrt(m/(float)N);
 }
 
+//Move atoms outside the sphere... inside somewhere
 float salt(state* s){
   int N = s->N,cnt,outcount=0;
   float *x=s->x;
@@ -77,8 +78,11 @@ float salt(state* s){
 	x[i*3+1]=r*sin(theta)*cos(phi);
 	x[i*3+2]=r*sin(theta)*sin(phi);
 	x[i*3+3]=r*cos(theta);
-	if(LJpot(x,(void*)&args)-s->E < 10)
+	int a=LJpot(x,(void*)&args);
+	if(a - s->E < 50)
 	  break;
+	else
+	  printf("???? salt fail %f ????\n",a-s->E);
 	if(cnt>100){
 	  printf("Error:unable to salt atom!\n");
 	  exit(0);

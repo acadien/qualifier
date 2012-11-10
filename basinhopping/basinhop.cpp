@@ -5,7 +5,6 @@
 //mine
 #include "constants.h"
 #include "random.h"
-#include "potential.h"
 #include "state.h"
 #include "localMin.h"
 #include "structure.h"
@@ -24,7 +23,7 @@ int main(int argc, char **argv){
   //Basin
   float ftol=0.1; //set the tolerance on basin finding algo
   //MC
-  int initLoop=100, hopLoop=1000; //MC loop lengths
+  int initLoop=100, hopLoop=100; //MC loop lengths
   float MCT=0.8;                  //Monte Carlo Temperature
   float MCalpha=0.36;             //Monte Carlo initial jump length
 
@@ -71,8 +70,6 @@ int main(int argc, char **argv){
   printf("\n");
   */
 
-
-  
   //Obtain your first basin!
   basinPowell(&s,ftol,LJpot,(void*)&args);
   printf("Powell Reduced Initial.\n");
@@ -83,7 +80,6 @@ int main(int argc, char **argv){
   
 
   //Let the basin hopping begin
-  //  MCalpha=0.1;             //Monte Carlo initial jump length
   float msdnow;
   for(int i=0;i<hopLoop;i++){
 
@@ -134,6 +130,7 @@ void MCstep(state* s, state* sprime,void* args,float ftol, float& MCT, float& MC
 
   while(true){
     cnt++;
+
     //Salt atoms that are outside of sphere boundary
     salt(s);
 
@@ -142,11 +139,6 @@ void MCstep(state* s, state* sprime,void* args,float ftol, float& MCT, float& MC
       sp.x[3*i+1] = s->x[3*i+1]+(mrand()-0.5)*2.0*MCalpha;
       sp.x[3*i+2] = s->x[3*i+2]+(mrand()-0.5)*2.0*MCalpha;
       sp.x[3*i+3] = s->x[3*i+3]+(mrand()-0.5)*2.0*MCalpha;
-      /*
-      sp.x[3*i] = s->x[3*i]+mnormrand(MCalpha/10.);
-      sp.x[3*i+1] = s->x[3*i+1]+mnormrand(MCalpha/10.);
-      sp.x[3*i+2] = s->x[3*i+2]+mnormrand(MCalpha/10.);
-      */
     }
     basinPowell(&sp,ftol,LJpot,(void*)&args2);
     sp.iters=0;
@@ -185,9 +177,11 @@ void MCstep(state* s, state* sprime,void* args,float ftol, float& MCT, float& MC
       accepts->push(0);
 
     //Update the Monte-Carlo Temperature according to acceptance
-    if(*acceptAvg > 0.52)
-      MCalpha/=alphaRatio;
-    else if (MCalpha > alphaStep && *acceptAvg < 0.48)
+    //if(*acceptAvg > 0.52)
+    if(accept)  
+      MCalpha/=alphaRatio;    
+    //else if (MCalpha > alphaStep && *acceptAvg < 0.48)
+    else if (MCalpha > alphaStep)
       MCalpha*=alphaRatio;
     
     if(!silent){

@@ -7,7 +7,7 @@
 #include "constants.h"
 #include "state.h"
 #include "structure.h"
-#include "potential.h"
+#include "localMin.h"
 
 #include "nr.h"
 #include "nrutil.h"
