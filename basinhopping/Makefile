@@ -5,13 +5,13 @@ LIBS 	= -lgsl -lgslcblas -lm -lstdc++
 CC	= gcc -O3
 
 basinhop: $(OBJ_FILES) nrutil.o
-	$(CC) $(INC) -o $@ $^ $(LIBS)
+	$(CC) -g $(INC) -o $@ $^ $(LIBS)
 
 nrutil.o: nrutil.c
-	$(CC) -c nrutil.c
+	$(CC) -g -c nrutil.c
 
 %.o: %.cpp
-	$(CC) $(LIBS) -c -o $@ $<
+	$(CC) -g $(LIBS) -c -o $@ $<
 
 clean:
 	rm *.o basinhop

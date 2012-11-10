@@ -17,24 +17,22 @@ float LJpot(float* cs, void* args){
   int N=((ARGST*)args)->N;
 
   for(int i=0;i<N;i++){
-    xi=cs[3*i];
-    yi=cs[3*i+1];
-    zi=cs[3*i+2]; 
+    xi=cs[3*i+1];
+    yi=cs[3*i+2];
+    zi=cs[3*i+3]; 
     //printf("%f %f %f\n",xi,yi,zi);
     for(int j=i+1;j<N;j++){
-      xj=cs[3*j];
-      yj=cs[3*j+1];
-      zj=cs[3*j+2];
+      xj=cs[3*j+1];
+      yj=cs[3*j+2];
+      zj=cs[3*j+3];
 
       dx=xi-xj;
       dy=yi-yj;
       dz=zi-zj;
       r=sqrt(dx*dx+dy*dy+dz*dz);
 
-      UR+=feps*(pow(sig/r,12.0)-pow(sig/r,6.0));
-      //break;
+      UR+=4.0*(pow(1.0/r,12.0)-pow(1.0/r,6.0));
     }
-    //break;
   }
   
   //printf("atom1:%g %g %g\n",xi,yi,zi);
@@ -54,7 +52,7 @@ float LJpotPunish(float* cs, void* args){
   float r;
 
   for(int i=0;i<N;i++){
-    r=origDist(&(cs[3*i]));
+    r=origDist(&(cs[3*i+1]));
     
     if( r > boundr )
       UR+=(r-boundr+0.5);

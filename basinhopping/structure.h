@@ -10,8 +10,8 @@ namespace Struc{
 
 float dist(float *a, float* b);
 float origDist(float *a);
-float* com(state* s);
 float msd(state* a, state* b);
+void com(state* s);
 void recenter(state* s);
 float salt(state* s);
 

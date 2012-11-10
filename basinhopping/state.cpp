@@ -9,13 +9,31 @@
 #include "structure.h"
 #include "potential.h"
 
+#include "nr.h"
+#include "nrutil.h"
+
 using namespace std;
 
 void allocState(state* s,int N){
-  s->N=N;
-  s->x=(float*)malloc(sizeof(float)*3*N);  
+  s->xi=matrix(1,3*N,1,3*N);  
+  for (int i=1;i<=3*N;i++)
+    for (int j=1;j<=3*N;j++)
+      (s->xi)[i][j]=(i==j ? 1.0 : 0.0);    
+  s->x=(float*)malloc(sizeof(float)*(3*N+1));
+  s->x[0]=0.0;
+  s->com=(float*)malloc(sizeof(float)*3);
   for(int i=0;i<3;i++)
-    s->com[0]=0.;
+    s->com[i]=0.;
+  s->iters=0;
+  s->E=0;
+  s->N=N;
+}
+
+void freeState(state* s){ 
+  int N=s->N;
+  free_matrix(s->xi,1,3*N,1,3*N);
+  free(s->com);
+  free(s->x);
 }
 
 void initState(state* s,int N){
@@ -43,9 +61,9 @@ void initState(state* s,int N){
       r=boundr*mrand();
       theta=2*M_PI*mrand();
       phi=acos(2.0*mrand()-1.0);
-      x[i*3]=r*sin(theta)*cos(phi);
-      x[i*3+1]=r*sin(theta)*sin(phi);
-      x[i*3+2]=r*cos(theta);
+      x[i*3+1]=r*sin(theta)*cos(phi);
+      x[i*3+2]=r*sin(theta)*sin(phi);
+      x[i*3+3]=r*cos(theta);
     }
 
     if(LJpot(x,(void*)&args)>5E8)
@@ -61,7 +79,7 @@ void printState(state* s,FILE *fp){
   printStateBounds(s,fp);
   fprintf(fp,"COORDINATES\n");
   for(int i=0;i<s->N;i++){
-    fprintf(fp,"% 5.5f % 5.5f % 5.5f\n",s->x[3*i],s->x[3*i+1],s->x[3*i+2]);
+    fprintf(fp,"% 5.5f % 5.5f % 5.5f\n",s->x[3*i+1],s->x[3*i+2],s->x[3*i+3]);
   }
 }
 
@@ -72,7 +90,7 @@ void printStateEnergy(state* s, FILE *fp){
 
 void printStateBounds(state *s, FILE *fp){
   float mnx=1E10,mny=1E10,mnz=1E10,mxx=-1E10,mxy=-1E10,mxz=-1E10;
-  float *xs=s->x;
+  float *xs=&(s->x[1]);
   for(int i=0;i<s->N;i++){
     if(xs[3*i]<mnx)
       mnx=xs[3*i];

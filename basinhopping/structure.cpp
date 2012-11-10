@@ -22,25 +22,25 @@ float origDist(float *a){
 }
 
 //Calculate the com
-float* com(state* s){
+void com(state* s){
   //First re-center about the center of mass.
   float* com=s->com;
   for(int i=0;i<s->N;i++){
-    com[0]+=s->x[3*i];
-    com[1]+=s->x[3*i+1];
-    com[2]+=s->x[3*i+2];
+    com[0]+=s->x[3*i+1];
+    com[1]+=s->x[3*i+2];
+    com[2]+=s->x[3*i+3];
   }
   for(int i=0;i<3;i++)
-    com[i]/=s->N;
-  return (float*)com;
+    s->com[i]=com[i]/s->N;
 }
 
 void recenter(state* s){
+  com(s);
   float *com=s->com;
   for(int i=0;i<s->N;i++){
-    s->x[3*i]-=com[0];
-    s->x[3*i+1]-=com[1];
-    s->x[3*i+2]-=com[2];
+    s->x[3*i+1]-=com[0];
+    s->x[3*i+2]-=com[1];
+    s->x[3*i+3]-=com[2];
   }
   for(int i=0;i<3;i++)
     s->com[i]=0.;
@@ -52,7 +52,7 @@ float msd(state* a, state* b){
   float* xb=b->x;
   int N=a->N;
   for(int i=0;i<N;i++){
-    d=dist(&xa[3*i],&xb[3*i]);
+    d=dist(&xa[3*i+1],&xb[3*i+1]);
     m+=d*d;
   }
   return sqrt(m/(float)N);
@@ -66,7 +66,7 @@ float salt(state* s){
   args.N=N;
 
   for(int i=0;i<N;i++){
-    if( origDist(&(x[3*i])) > boundr ){
+    if( origDist(&(x[3*i+1])) > boundr ){
       outcount++;
       cnt=0;
       while(true){
@@ -74,9 +74,9 @@ float salt(state* s){
 	r=boundr*mrand();
 	theta=2*M_PI*mrand();
 	phi=acos(2.0*mrand()-1.0);
-	x[i*3]=r*sin(theta)*cos(phi);
-	x[i*3+1]=r*sin(theta)*sin(phi);
-	x[i*3+2]=r*cos(theta);
+	x[i*3+1]=r*sin(theta)*cos(phi);
+	x[i*3+2]=r*sin(theta)*sin(phi);
+	x[i*3+3]=r*cos(theta);
 	if(LJpot(x,(void*)&args)-s->E < 10)
 	  break;
 	if(cnt>100){

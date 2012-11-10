@@ -5,6 +5,7 @@
 #include "localMin.h"
 #include "state.h"
 #include "constants.h"
+#include "structure.h"
 
 #include "nr.h"
 #include "nrutil.h"
@@ -15,18 +16,6 @@
 #include "brent.c"
 
 using namespace std;
-using namespace Powell;
-
-void initPowell(int NDIM){
-  int i,j;
-
-  xi=matrix(1,NDIM,1,NDIM);  
-  for (i=1;i<=NDIM;i++){
-    for (j=1;j<=NDIM;j++){
-      xi[i][j]=(i==j ? 1.0 : 0.0);
-    }
-  }
-}
 
 /* The original Powell's method, unbounded
 void basinPowell(state* s,float ftol,float (*func)(float [], void*),void* args){
@@ -40,23 +29,10 @@ void basinPowell(state* s,float ftol,float (*func)(float [], void*),void* args){
 //Bounded powell's... kind of
 void basinPowell(state* s,float ftol,float (*func)(float [], void*),void* args){
   float fret;
-  float origin[3]={0.,0.,0.};
-  powell(s->x,xi,s->N*3,ftol,&(s->iters),&fret,func,args);
+  powell(s->x,s->xi,s->N*3,ftol,&(s->iters),&fret,func,args);
 
-  //First re-center about the center of mass.
-  float com[3]={0.,0.,0.};
-  for(int i;i<s->N;i++){
-    com[0]+=s->x[3*i];
-    com[1]+=s->x[3*i+1];
-    com[2]+=s->x[3*i+2];
-  }
-  for(int i;i<3;i++)
-    com[i]/=s->N;
-  for(int i;i<s->N;i++){
-    s->x[3*i]-=com[0];
-    s->x[3*i+1]-=com[1];
-    s->x[3*i+2]-=com[2];
-  }
+  //re-center about the center of mass.
+  recenter(s);
 
   s->E=func(s->x,args);
 }

@@ -15,13 +15,14 @@ using namespace std;
 
 int main(int argc, char **argv){
   state s;
+  state sprime;
   state* basins;
 
   //Settings
-  int aLen=500;  //how big should the window average be
+  int aLen=100;  //how big should the window average be
   int nAtom=38; //how many atoms
   //Basin
-  float ftol=0.2; //set the tolerance on basin finding algo
+  float ftol=0.1; //set the tolerance on basin finding algo
   //MC
   int initLoop=100, hopLoop=1000; //MC loop lengths
   float MCT=0.8;                  //Monte Carlo Temperature
@@ -32,6 +33,7 @@ int main(int argc, char **argv){
 
   //Initialize cluster
   initState(&s,nAtom);
+  initState(&sprime,nAtom);
   basins=(state*)malloc(sizeof(state)*hopLoop);
   for(int i=0;i<hopLoop;i++)
     allocState(&(basins[i]),nAtom);
@@ -53,7 +55,6 @@ int main(int argc, char **argv){
   }
 
   //Prepare optimizers
-  initPowell(s.N*3);
   printf("Initial\n");
   printStateVolume(&s,fp);
   printStateEnergy(&s,fp);
@@ -70,6 +71,8 @@ int main(int argc, char **argv){
   printf("\n");
   */
 
+
+  
   //Obtain your first basin!
   basinPowell(&s,ftol,LJpot,(void*)&args);
   printf("Powell Reduced Initial.\n");
@@ -77,15 +80,14 @@ int main(int argc, char **argv){
   printStateEnergy(&s,fp);
   printStateBounds(&s,fp);
   printf("\n");
+  
 
   //Let the basin hopping begin
   //  MCalpha=0.1;             //Monte Carlo initial jump length
   float msdnow;
   for(int i=0;i<hopLoop;i++){
 
-    MCstep(&s,(void*)&args,ftol,MCT,MCalpha,&accepts,&acceptAvg,true);
-
-    //basinPowell(&s,ftol,LJpot,(void*)&args);
+    MCstep(&s,&sprime,(void*)&args,ftol,MCT,MCalpha,&accepts,&acceptAvg,true);
 
     copyState(&s,&(basins[i]));
 
@@ -108,21 +110,27 @@ int main(int argc, char **argv){
     printStateEnergy(&s,fp);
     printStateBounds(&s,fp);
     printf("****************************\n");
-
   }
 
   printStateBounds(&s,fp);
-  
+
+  for(int i=0;i<hopLoop;i++)
+    freeState(&(basins[i]));
+  free(basins);
+  freeState(&sprime);
+  freeState(&s);
+
   return 0;
 }
 
-void MCstep(state* s, void* args,float ftol, float& MCT, float& MCalpha, std::queue<int>* accepts, float* acceptAvg, bool silent){
+void MCstep(state* s, state* sprime,void* args,float ftol, float& MCT, float& MCalpha, std::queue<int>* accepts, float* acceptAvg, bool silent){
 
   int cnt=0;
-  state sprime;
   float alphaStep=0.0002,alphaRatio=0.99;
-  initState(&sprime,s->N);
-  initPowell(s->N*3);
+  ARGST args2;
+  args2.N=s->N;
+
+  state sp=*sprime;
 
   while(true){
     cnt++;
@@ -130,37 +138,36 @@ void MCstep(state* s, void* args,float ftol, float& MCT, float& MCalpha, std::qu
     salt(s);
 
     //Step out of local minimum!
-    for(int i=0;i<sprime.N;i++){
-      sprime.x[3*i] = s->x[3*i]+(mrand()-0.5)*2.0*MCalpha*0.5;
-      sprime.x[3*i+1] = s->x[3*i+1]+(mrand()-0.5)*2.0*MCalpha*0.5;
-      sprime.x[3*i+2] = s->x[3*i+2]+(mrand()-0.5)*2.0*MCalpha*0.5;
+    for(int i=0;i<sp.N;i++){
+      sp.x[3*i+1] = s->x[3*i+1]+(mrand()-0.5)*2.0*MCalpha;
+      sp.x[3*i+2] = s->x[3*i+2]+(mrand()-0.5)*2.0*MCalpha;
+      sp.x[3*i+3] = s->x[3*i+3]+(mrand()-0.5)*2.0*MCalpha;
       /*
-      sprime.x[3*i] = s->x[3*i]+mnormrand(MCalpha/10.);
-      sprime.x[3*i+1] = s->x[3*i+1]+mnormrand(MCalpha/10.);
-      sprime.x[3*i+2] = s->x[3*i+2]+mnormrand(MCalpha/10.);
+      sp.x[3*i] = s->x[3*i]+mnormrand(MCalpha/10.);
+      sp.x[3*i+1] = s->x[3*i+1]+mnormrand(MCalpha/10.);
+      sp.x[3*i+2] = s->x[3*i+2]+mnormrand(MCalpha/10.);
       */
     }
-    
-    basinPowell(&sprime,ftol,LJpot,args);
+    basinPowell(&sp,ftol,LJpot,(void*)&args2);
+    sp.iters=0;
+    //sp.E=LJpot(sp.x,args);
 
-    //sprime.E=LJpot(sprime.x,args);
-
-    float weight=exp( -(sprime.E - s->E) / MCT );
+    float weight=exp( -(sp.E - s->E) / MCT );
     if(!silent)
-      printf("old:%4.4f new:%4.4f | expdelE=%4.4f\n",s->E,sprime.E,weight);
+      printf("old:%4.4f new:%4.4f | expdelE=%4.4f\n",s->E,sp.E,weight);
 
     //Monte-Carlo action bam-pow
     bool accept=false;
-    if(sprime.E < s->E){
+    if(sp.E < s->E){
       if(!silent)
 	printf("lower energy\n");
-      copyState(&sprime,s);
+      copyState(&sp,s);
       accept=true;
     }else 
       if(mrand()<weight){
 	if(!silent)
 	  printf("higher energy\n");
-	copyState(&sprime,s);
+	copyState(&sp,s);
 	accept=true;
       }else{
 	if(!silent)

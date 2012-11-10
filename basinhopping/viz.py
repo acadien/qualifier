@@ -17,8 +17,8 @@ while len(data)>1:
     natoms.append(int(data[pos+1]))
     energies.append(float(data[pos+3]))
     volumes.append(float(data[pos+5]))
-    n=pos+11+natoms[-1]
-    a=data[pos+11:n]
+    n=pos+9+natoms[-1]
+    a=data[pos+9:n]
     atoms.append(map(lambda x:map(float,x.split()),a))
     msds.append(float(data[n+1]))
     data=data[n+2:]

@@ -5,7 +5,7 @@
 #include "state.h"
 #include "potential.h"
 
-void MCstep(state*, void*,float,float&,float&,std::queue<int>*,float*,bool);
+void MCstep(state*, state*,void*,float,float&,float&,std::queue<int>*,float*,bool);
 void resetWindow(std::queue<int>*,float*,int);
 
 #endif

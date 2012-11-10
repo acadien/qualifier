@@ -4,14 +4,14 @@
 #define TINY 1.0e-25
 #define ITMAX 200
 
-void powell(float p[], float **xi, int n, float ftol, int *iter, float *fret,
+void powell(float* p, float **xi, int n, float ftol, int *iter, float *fret,
 	    float (*func)(float [], void*),void* args)
 {
 	void linmin(float p[], float xi[], int n, float *fret,
 		    float (*func)(float [], void*),void* args);
 	int i,ibig,j;
 	float del,fp,fptt,t,*pt,*ptt,*xit;
-
+	//	return;
 	pt=vector(1,n);
 	ptt=vector(1,n);
 	xit=vector(1,n);

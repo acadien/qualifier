@@ -345,7 +345,7 @@ void poldiv(float u[], int n, float v[], int nv, float q[], float r[]);
 void polin2(float x1a[], float x2a[], float **ya, int m, int n,
 	float x1, float x2, float *y, float *dy);
 void polint(float xa[], float ya[], int n, float x, float *y, float *dy);
-void powell(float p[], float **xi, int n, float ftol, int *iter, float *fret,
+  void powell(float* p, float **xi, int n, float ftol, int *iter, float *fret,
 	    float (*func)(float [],void*),void* args);
 void predic(float data[], int ndata, float d[], int m, float future[], int nfut);
 float probks(float alam);
