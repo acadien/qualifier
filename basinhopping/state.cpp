@@ -98,20 +98,20 @@ void printStateEnergy(state* s, FILE *fp){
 
 void printStateBounds(state *s, FILE *fp){
   float mnx=1E10,mny=1E10,mnz=1E10,mxx=-1E10,mxy=-1E10,mxz=-1E10;
-  float *xs=&(s->x[1]);
+  float *xs=s->x;
   for(int i=0;i<s->N;i++){
-    if(xs[3*i]<mnx)
-      mnx=xs[3*i];
-    if(xs[3*i]>mxx)
-      mxx=xs[3*i];
-    if(xs[3*i+1]<mny)
-      mny=xs[3*i+1];
-    if(xs[3*i+1]>mxy)
-      mxy=xs[3*i+1];
-    if(xs[3*i+2]<mnz)
-      mnz=xs[3*i+2];
-    if(xs[3*i+2]>mxz)
-      mxz=xs[3*i+2];
+    if(xs[3*i+1]<mnx)
+      mnx=xs[3*i+1];
+    if(xs[3*i+1]>mxx)
+      mxx=xs[3*i+1];
+    if(xs[3*i+2]<mny)
+      mny=xs[3*i+2];
+    if(xs[3*i+2]>mxy)
+      mxy=xs[3*i+2];
+    if(xs[3*i+3]<mnz)
+      mnz=xs[3*i+3];
+    if(xs[3*i+3]>mxz)
+      mxz=xs[3*i+3];
   }
   fprintf(fp,"BOUNDS\n");
   fprintf(fp,"delx= %6.6f | ",mxx-mnx);
@@ -123,18 +123,18 @@ void printStateVolume(state *s, FILE *fp){
   float mnx=1E10,mny=1E10,mnz=1E10,mxx=-1E10,mxy=-1E10,mxz=-1E10;
   float *xs=s->x;
   for(int i=0;i<s->N;i++){
-    if(xs[3*i]<mnx)
-      mnx=xs[3*i];
-    if(xs[3*i]>mxx)
-      mxx=xs[3*i];
-    if(xs[3*i+1]<mny)
-      mny=xs[3*i+1];
-    if(xs[3*i+1]>mxy)
-      mxy=xs[3*i+1];
-    if(xs[3*i+2]<mnz)
-      mnz=xs[3*i+2];
-    if(xs[3*i+2]>mxz)
-      mxz=xs[3*i+2];
+    if(xs[3*i+1]<mnx)
+      mnx=xs[3*i+1];
+    if(xs[3*i+1]>mxx)
+      mxx=xs[3*i+1];
+    if(xs[3*i+2]<mny)
+      mny=xs[3*i+2];
+    if(xs[3*i+2]>mxy)
+      mxy=xs[3*i+2];
+    if(xs[3*i+3]<mnz)
+      mnz=xs[3*i+3];
+    if(xs[3*i+3]>mxz)
+      mxz=xs[3*i+3];
   }
   fprintf(fp,"VOLUME\n");
   fprintf(fp,"%6.6f\n",(mxx-mnx)*(mxy-mny)*(mxz-mnz));

@@ -23,11 +23,11 @@ int main(int argc, char **argv){
   int aLen=100;  //how big should the window average be
   int nAtom=38; //how many atoms
   //Basin
-  float ftol=0.01; //set the tolerance on basin finding algo
+  float ftol=0.05; //set the tolerance on basin finding algo
   //MC
-  int initLoop=10, hopLoop=5; //MC loop lengths
+  int initLoop=1000, hopLoop=5000; //MC loop lengths
   float MCT=0.8;                  //Monte Carlo Temperature
-  float MCalpha=0.25;             //Monte Carlo initial jump length
+  float MCalpha=0.30;             //Monte Carlo initial jump length
 
   //Initialize random numbers (mersenne twist)
   initrng();
@@ -72,8 +72,12 @@ int main(int argc, char **argv){
   printf("\n");
 
   //Initial cluster will be horrible, run it through some MC to reduce total energy
-  for(int i=0;i<initLoop;i++)
+  for(int i=0;i<initLoop;i++){
     MCstep(&s,&sprime,(void*)&args,ftol,MCT,MCalpha,&accepts,&acceptAvg,true);
+    printStateVolume(&s,fp);
+    printStateEnergy(&s,fp);
+    printStateBounds(&s,fp);
+  }
   printf("Reduced Initial.\n");
   printStateVolume(&s,fp);
   printStateEnergy(&s,fp);
@@ -115,13 +119,16 @@ int main(int argc, char **argv){
   }
 
   //Reoptimize with higher accuracy
-  ftol=1e-6;
-  float estart;
+  ftol=1e-4;
+  float estart,eend;
   for(int i=0;i<hopLoop;i++){
     estart=basins[i].E;
-    basinPowell(&(basins[i]),ftol,LJpot,(void*)&args);
-    printf("delE=%f\n",estart-basins[i].E);
-    printState(&(basins[i]),logf);
+    copyState(&(basins[i]),&sprime);
+    basinPowell(&sprime,ftol,LJpot,(void*)&args);
+    if(sprime.E<basins[i].E)
+      printState(&sprime,logf);
+    else
+      printState(&(basins[i]),logf);
   }
 
   msdnow=msd(&basins[0],&basins[hopLoop-1]);
@@ -148,6 +155,9 @@ void MCstep(state* s, state* sprime,void* args,float ftol, float& MCT, float& MC
   while(true){
     cnt++;
 
+    //Squeeze the structure to be more "cube-like" 
+    cubify(s);
+
     //Salt atoms that are outside of sphere boundary
     salt(s);
 
@@ -161,6 +171,7 @@ void MCstep(state* s, state* sprime,void* args,float ftol, float& MCT, float& MC
     sp.iters=0;
     //sp.E=LJpot(sp.x,args);
 
+    //Calculate the Metropolis Criterion
     float weight=exp( -(sp.E - s->E) / MCT );
     if(!silent)
       printf("old:%4.4f new:%4.4f | expdelE=%4.4f\n",s->E,sp.E,weight);
@@ -168,14 +179,14 @@ void MCstep(state* s, state* sprime,void* args,float ftol, float& MCT, float& MC
     //Monte-Carlo action bam-pow
     bool accept=false;
     if(sp.E < s->E){
-      if(!silent)
-	printf("lower energy\n");
+      //if(!silent)
+      //  printf("lower energy\n");
       copyState(&sp,s);
       accept=true;
     }else 
       if(mrand()<weight){
-	if(!silent)
-	  printf("higher energy\n");
+	//if(!silent)
+	//printf("higher energy\n");
 	copyState(&sp,s);
 	accept=true;
       }else{
@@ -194,14 +205,14 @@ void MCstep(state* s, state* sprime,void* args,float ftol, float& MCT, float& MC
       accepts->push(0);
 
     //Update the Monte-Carlo Temperature according to acceptance
-    //if(accept)  
-    //  MCalpha/=alphaRatio;    
-    //else if (MCalpha > alphaStep)
-    //  MCalpha*=alphaRatio;
+    if(accept)  
+      MCalpha/=alphaRatio;    
+    else if (MCalpha > alphaStep)
+      MCalpha*=alphaRatio;
     
     if(!silent){
       printf("inside: acceptAvg=%f MCT=%f           MCalpha=%f\n",*acceptAvg,MCT,MCalpha);
-      printf("===========================\n\n");
+      //printf("===========================\n\n");
     }
     if(accept)
       break;
