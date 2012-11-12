@@ -11,12 +11,16 @@ namespace Potential{
 //Args for LJ/powell function call
 typedef struct ARGST{
   int N;
+  int d;
+  float alpham;
+  state *sp,*spp;
 }ARGST;
 
 float LJpot(float* cs, void* args);
 float LJpotPunish(float* cs, void* args);
+float LJpotAtom(float* cs, void* args);
 
 void basinPowell(state* s,float ftol, float (*func)(float [], void*),void* args);
-void basinJiggle(state* s, float ftol, float (*func)(float [], void*),void* args);
+void basinJiggle(state* s, float (*func)(float [], void*),void* args);
 
 #endif

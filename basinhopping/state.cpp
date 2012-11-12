@@ -15,6 +15,7 @@
 using namespace std;
 
 void allocState(state* s,int N){
+  s->N=N;
   s->xi=matrix(1,3*N,1,3*N);  
   for (int i=1;i<=3*N;i++)
     for (int j=1;j<=3*N;j++)
@@ -26,7 +27,6 @@ void allocState(state* s,int N){
     s->com[i]=0.;
   s->iters=0;
   s->E=0;
-  s->N=N;
   s->msd=0.;
   s->msdIdeal=0.;
 }

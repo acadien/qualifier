@@ -24,7 +24,7 @@ float origDist(float *a){
 //Calculate the com
 void com(state* s){
   //First re-center about the center of mass.
-  float* com=s->com;
+  float com[3]={0.0,0.0,0.0};
   for(int i=0;i<s->N;i++){
     com[0]+=s->x[3*i+1];
     com[1]+=s->x[3*i+2];
@@ -58,7 +58,7 @@ float msd(state* a, state* b){
   return sqrt(m/(float)N);
 }
 
-//Move atoms outside the sphere... inside somewhere
+//Move atoms from outside the sphere... inside sphere somewhere
 float salt(state* s){
   int N = s->N,cnt,outcount=0;
   float *x=s->x;
@@ -70,6 +70,7 @@ float salt(state* s){
     if( origDist(&(x[3*i+1])) > boundr ){
       outcount++;
       cnt=0;
+      args.d=i;
       while(true){
 	cnt++;
 	r=boundr*mnormrand(1.0);
@@ -81,11 +82,11 @@ float salt(state* s){
 	x[i*3+2]=r*sin(theta)*sin(phi);
 	x[i*3+3]=r*cos(theta);
 	int a=LJpot(x,(void*)&args);
-	if(a - s->E < 500.)
+	if(a - s->E < 5.)
 	  break;
 	else
 	  printf("???? salt fail %f ????\n",a-s->E);
-	if(cnt>500){
+	if(cnt>10000){
 	  printf("Error:unable to salt atom!\n");
 	  exit(0);
 	}
