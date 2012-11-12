@@ -9,6 +9,7 @@
 #include "state.h"
 #include "localMin.h"
 #include "structure.h"
+#include "rmsd.h"
 #include "basinhop.h"
 
 using namespace std;
@@ -21,11 +22,11 @@ int main(int argc, char **argv){
 
   //Settings
   int aLen=100;  //how big should the window average be
-  int nAtom=38; //how many atoms
+  int nAtom=104; //how many atoms
   //Basin
-  float ftol=0.05; //set the tolerance on basin finding algo
+  float ftol=0.1; //set the tolerance on basin finding algo
   //MC
-  int initLoop=1000, hopLoop=5000; //MC loop lengths
+  int initLoop=10, hopLoop=5; //MC loop lengths
   float MCT=0.8;                  //Monte Carlo Temperature
   float MCalpha=0.30;             //Monte Carlo initial jump length
 
@@ -73,7 +74,11 @@ int main(int argc, char **argv){
 
   //Initial cluster will be horrible, run it through some MC to reduce total energy
   for(int i=0;i<initLoop;i++){
+    
+    cubify(&s); //Squeeze the structure to be more "cube-like" 
+    
     MCstep(&s,&sprime,(void*)&args,ftol,MCT,MCalpha,&accepts,&acceptAvg,true);
+    
     printStateVolume(&s,fp);
     printStateEnergy(&s,fp);
     printStateBounds(&s,fp);
@@ -84,16 +89,6 @@ int main(int argc, char **argv){
   printStateBounds(&s,fp);
   printf("\n");
   
-  /*
-  //Obtain your first basin!
-  basinPowell(&s,ftol,LJpot,(void*)&args);
-  printf("Powell Reduced Initial.\n");
-  printStateVolume(&s,fp);
-  printStateEnergy(&s,fp);
-  printStateBounds(&s,fp);
-  printf("\n");
-  */
-
   //Let the basin hopping begin
   float msdnow;
   for(int i=0;i<hopLoop;i++){
@@ -102,17 +97,9 @@ int main(int argc, char **argv){
 
     copyState(&s,&(basins[i]));
 
-    if(i>0){
-      msdnow=msd(&basins[i],&basins[i-1]);
-      basins[i].msd=msdnow;
-    }
-    msdnow=msd(&basins[i],&sideal);
-    basins[i].msdIdeal=msdnow;
-
     printf("****************************\n");
     printf("%d\n",i);
-    if(i>0)
-      printf("msd ideal=%f stepsize=%f acceptRatio=%f\n",msdnow,MCalpha,acceptAvg);
+    printStateVolume(&s,fp);
     printStateEnergy(&s,fp);
     printStateBounds(&s,fp);
     printf("****************************\n");
@@ -120,19 +107,21 @@ int main(int argc, char **argv){
 
   //Reoptimize with higher accuracy
   ftol=1e-4;
-  float estart,eend;
   for(int i=0;i<hopLoop;i++){
-    estart=basins[i].E;
+    printf("%d\n",i);
+
     copyState(&(basins[i]),&sprime);
     basinPowell(&sprime,ftol,LJpot,(void*)&args);
-    if(sprime.E<basins[i].E)
-      printState(&sprime,logf);
-    else
-      printState(&(basins[i]),logf);
+    if( sprime.E < basins[i].E )
+      copyState(&sprime,&(basins[i]));
+    if(i>0)
+      basins[i].msd=msd(&basins[i],&basins[i-1]);
+    basins[i].msdIdeal=rmsd(nAtom,&(basins[i].x[1]),&(sideal.x[1]));
+
+    //Write relevant information to log
+    printState(&(basins[i]),logf);
   }
 
-  msdnow=msd(&basins[0],&basins[hopLoop-1]);
-  printf("Total MSD=%f\n",msdnow);
   for(int i=0;i<hopLoop;i++)
     freeState(&(basins[i]));
   free(basins);
@@ -154,9 +143,6 @@ void MCstep(state* s, state* sprime,void* args,float ftol, float& MCT, float& MC
 
   while(true){
     cnt++;
-
-    //Squeeze the structure to be more "cube-like" 
-    cubify(s);
 
     //Salt atoms that are outside of sphere boundary
     salt(s);

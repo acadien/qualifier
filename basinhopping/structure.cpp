@@ -73,19 +73,19 @@ float salt(state* s){
       while(true){
 	cnt++;
 	r=boundr*mnormrand(1.0);
-	if(r>boundr) r-=boundr;
-	if(r<-boundr) r+=boundr;
+	while(r>boundr) r-=boundr;
+	while(r<-boundr) r+=boundr;
 	theta=2*M_PI*mrand();
 	phi=acos(2.0*mrand()-1.0);
 	x[i*3+1]=r*sin(theta)*cos(phi);
 	x[i*3+2]=r*sin(theta)*sin(phi);
 	x[i*3+3]=r*cos(theta);
 	int a=LJpot(x,(void*)&args);
-	if(a - s->E < 50)
+	if(a - s->E < 500.)
 	  break;
 	else
 	  printf("???? salt fail %f ????\n",a-s->E);
-	if(cnt>100){
+	if(cnt>500){
 	  printf("Error:unable to salt atom!\n");
 	  exit(0);
 	}
