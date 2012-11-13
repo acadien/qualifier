@@ -22,16 +22,15 @@ int main(int argc, char **argv){
 
   //Settings
   int aLen=100;  //how big should the window average be
-  int nAtom=38; //how many atoms
+  int nAtom=104; //how many atoms
   //Basin
   float ftol=0.1; //set the tolerance on basin finding algo methodA
-  bool MethodA=false;
+  bool MethodA=true;
   //MC
   int initLoop=1000, hopLoop=5000; //MC loop lengths
   float MCT=0.8;                  //Monte Carlo Temperature
   float MCalpha=0.30;             //Monte Carlo initial jump length
   
-
   //Initialize random numbers (mersenne twist)
   initrng();
 
@@ -64,7 +63,7 @@ int main(int argc, char **argv){
   FILE* fp=stdout;
   FILE *logf;
   if(MethodA)
-    logf = fopen("finalstate_N38_A_0.dat","w");
+    logf = fopen("finalstate_N104_A_2.dat","w");
   else
     logf = fopen("finalstate_N38_B_0.dat","w");
 
@@ -189,7 +188,7 @@ void MCstep(state* s, state* sprime,void* args,float ftol, float& MCT, float& MC
     //Calculate the Metropolis Criterion
     float weight=exp( -(sap.E - s->E) / MCT );
     //if(!silent)
-    printf("old:%4.4f new:%4.4f | expdelE=%4.4f\n",s->E,sap.E,weight);
+    //printf("old:%4.4f new:%4.4f | expdelE=%4.4f\n",s->E,sap.E,weight);
 
     //Monte-Carlo action bam-pow
     bool accept=false;
@@ -205,8 +204,14 @@ void MCstep(state* s, state* sprime,void* args,float ftol, float& MCT, float& MC
 	  printf("higher energy didn't take\n");
       }
 
-    if(cnt>500 and (sap.E-s->E)<10.)
+    if(cnt>500){
+      if ((sap.E-s->E)<10.){
+      printf("bleh\n");
       accept=true;
+      }
+      else
+	printf("doh\n");
+    }
 
     //Update the acceptance queue and average acceptance
     *acceptAvg-=accepts->front()/(float)accepts->size();
@@ -232,7 +237,7 @@ void MCstep(state* s, state* sprime,void* args,float ftol, float& MCT, float& MC
     //  basinPowell(&sap,ftol,LJpot,args);
     //}
     //if(!silent)
-    printf("inside: acceptAvg=%f MCT=%f           MCalpha=%f\n",*acceptAvg,MCT,MCalpha);
+    //printf("inside: acceptAvg=%f MCT=%f           MCalpha=%f\n",*acceptAvg,MCT,MCalpha);
 
     if(accept)
       break;
