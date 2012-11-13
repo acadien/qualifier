@@ -24,7 +24,7 @@ float origDist(float *a){
 //Calculate the com
 void com(state* s){
   //First re-center about the center of mass.
-  float* com=s->com;
+  float com[3]={0.0,0.0,0.0};
   for(int i=0;i<s->N;i++){
     com[0]+=s->x[3*i+1];
     com[1]+=s->x[3*i+2];
@@ -58,7 +58,7 @@ float msd(state* a, state* b){
   return sqrt(m/(float)N);
 }
 
-//Move atoms outside the sphere... inside somewhere
+//Move atoms from outside the sphere... inside sphere somewhere
 float salt(state* s){
   int N = s->N,cnt,outcount=0;
   float *x=s->x;
@@ -70,20 +70,23 @@ float salt(state* s){
     if( origDist(&(x[3*i+1])) > boundr ){
       outcount++;
       cnt=0;
+      args.d=i;
       while(true){
 	cnt++;
-	r=boundr*mrand();
+	r=boundr*mnormrand(1.0);
+	while(r>boundr) r-=boundr;
+	while(r<-boundr) r+=boundr;
 	theta=2*M_PI*mrand();
 	phi=acos(2.0*mrand()-1.0);
 	x[i*3+1]=r*sin(theta)*cos(phi);
 	x[i*3+2]=r*sin(theta)*sin(phi);
 	x[i*3+3]=r*cos(theta);
 	int a=LJpot(x,(void*)&args);
-	if(a - s->E < 50)
+	if(a - s->E < 5.)
 	  break;
 	else
 	  printf("???? salt fail %f ????\n",a-s->E);
-	if(cnt>100){
+	if(cnt>10000){
 	  printf("Error:unable to salt atom!\n");
 	  exit(0);
 	}
@@ -94,3 +97,40 @@ float salt(state* s){
     printf("salt cnt=%d\n",outcount);
 }
 
+//compresses axes that are greater than the average boundary width
+//intended to be used during initialization
+void cubify(state *s){
+  mnx=1E10;
+  mny=1E10;
+  mnz=1E10;
+  mxx=-1E10;
+  mxy=-1E10;
+  mxz=-1E10;
+  float *xs=s->x;
+  for(int i=0;i<s->N;i++){
+    if(xs[3*i+1]<mnx)
+      mnx=xs[3*i+1];
+    if(xs[3*i+1]>mxx)
+      mxx=xs[3*i+1];
+    if(xs[3*i+2]<mny)
+      mny=xs[3*i+2];
+    if(xs[3*i+2]>mxy)
+      mxy=xs[3*i+2];
+    if(xs[3*i+3]<mnz)
+      mnz=xs[3*i+3];
+    if(xs[3*i+3]>mxz)
+      mxz=xs[3*i+3];
+  }
+  strucx=mxx-mnx;
+  strucy=mxy-mny;
+  strucz=mxz-mnz;
+  float avgwidth=(strucx+strucy+strucz)/3.0;
+  strucx=0.5*(1.+avgwidth/strucx);
+  strucy=0.5*(1.+avgwidth/strucy);
+  strucz=0.5*(1.+avgwidth/strucz);
+  for(int i=0;i<s->N;i++){
+    xs[3*i+1]*=strucx;
+    xs[3*i+2]*=strucy;
+    xs[3*i+3]*=strucz;
+  }
+}

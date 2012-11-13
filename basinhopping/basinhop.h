@@ -5,7 +5,7 @@
 #include "state.h"
 #include "localMin.h"
 
-void MCstep(state*, state*,void*,float,float&,float&,std::queue<int>*,float*,bool);
+void MCstep(state*, state*,void*,float,float&,float&,std::queue<int>*,float*,bool,bool);
 void resetWindow(std::queue<int>*,float*,int);
 void loadIdeal(state* sideal,FILE* ifile);
 

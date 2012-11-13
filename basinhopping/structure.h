@@ -6,6 +6,7 @@
 
 namespace Struc{
   static float strucx,strucy,strucz;
+  static float mnx,mxx,mny,mxy,mnz,mxz;
 }
 
 float dist(float *a, float* b);
@@ -14,5 +15,6 @@ float msd(state* a, state* b);
 void com(state* s);
 void recenter(state* s);
 float salt(state* s);
+void cubify(state *s);
 
 #endif
