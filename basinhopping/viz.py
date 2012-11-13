@@ -4,6 +4,7 @@ import pylab as pl
 import sys
 #mine
 from poscarsPlot import plotsimulation
+from struct_tools import neighbors
 
 data=open(sys.argv[1],"r").readlines()
 if data[0][0]=="#":
@@ -15,7 +16,7 @@ energies=list()
 volumes=list()
 natoms=list()
 
-basis=[[11.0,0,0],[0,11.0,0],[0,0,11.0]]
+basis=[[3.5/2,0,0],[0,3.5/2,0],[0,0,3.5/2]]
 pos=0
 while len(data)>1:
     natoms.append(int(data[pos+1]))
@@ -47,7 +48,16 @@ pl.xlabel("Step")
 #Figure 2: Visualize Lowest Energy Configuration
 fig2=pl.figure()
 #a2=fig2.add_subplot(111,project='3d')
+mc=energies.index(min(energies))
+iatoms=atoms[mc]
+ienergy=energies[mc]
+print ienergy
+aa=plotsimulation(basis,iatoms,[na],fig2)
+bnd=[[0.0,11.0],[0.0,11.0],[0.0,11.0]]
+halfNeigh=neighbors(iatoms,bnd,1.8,"half")
 
-iatoms=atoms[energies.index(min(energies))]
-plotsimulation(basis,iatoms,[na],fig2)
+for a in range(na):
+    for b in halfNeigh[a]:
+        x,y,z=zip(*[iatoms[a],iatoms[b]])
+        aa.plot(x,y,z,c="black",lw=1.5)
 pl.show()
