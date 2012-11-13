@@ -137,13 +137,11 @@ void basinJiggle(state* s, float (*func)(float [], void*),void* args){
       copyState(spp,sp);
     else
       failCount++;
-    printf("*");
+
   }
-  copyState(sp,s);
-  if(s->E>1047806272){
-    printf("WTF\n");
-    exit(0);
-  }
-  printf("!!! %f\n",alpham);
+  if(sp->E<1000000000)
+    copyState(sp,s);
+  else
+    printf("not copying back due to mal-formed energy, buggy sorry...\n");
   recenter(s);
 }
