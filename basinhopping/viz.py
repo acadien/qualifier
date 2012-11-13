@@ -14,31 +14,34 @@ msdNeighb=list()
 msdIdeal=list()
 energies=list()
 volumes=list()
-natoms=list()
+natoms=0
 
-basis=[[3.5/2,0,0],[0,3.5/2,0],[0,0,3.5/2]]
-pos=0
-while len(data)>1:
-    natoms.append(int(data[pos+1]))
-    energies.append(float(data[pos+3]))
-    volumes.append(float(data[pos+5]))
-    n=pos+9+natoms[-1]
-    a=data[pos+9:n]
-    atoms.append(map(lambda x:map(float,x.split()),a))
-    msdNeighb.append(float(data[n+1]))
-    msdIdeal.append(float(data[n+3]))
-    data=data[n+5:]
-
+basis=[[11.0/2,0,0],[0,11.0/2,0],[0,0,11.0/2]]
+natoms=int(data[1])
+pos=14+natoms
+for i,line in enumerate(data):
+    j=i%pos
+    if(j==3):
+        energies.append(float(line))
+    if(j==5):
+        volumes.append(float(line))
+    if(j==9):
+        atoms.append(list())
+    if(j>=9 and j<9+natoms):
+        atoms[-1].append(map(float,line.split()))
+    if(j==natoms+10):
+        msdNeighb.append(float(line))
+    if(j==natoms+12):
+        msdIdeal.append(float(line))
 optimE={38:-173.252,76:-402.384,104:-582.038}
 nState=len(msdNeighb)
-na=natoms[-1]
 
 #Figure 1: MSD & Energy vs step #
 pl.subplot(211)
-pl.title("%d Atoms"%na)
+pl.title("%d Atoms"%natoms)
 pl.ylabel("Energy")
-pl.plot([0,nState],[optimE[na]/na,optimE[na]/na],color="black",ls="--",label="Optimal Energy/atom")
-pl.plot(range(nState),[i/na for i in energies],label="Energy/atom")
+pl.plot([0,nState],[optimE[natoms]/natoms,optimE[natoms]/natoms],color="black",ls="--",label="Optimal Energy/atom")
+pl.plot(range(nState),[i/natoms for i in energies],label="Energy/atom")
 pl.subplot(212)
 pl.plot(range(nState),msdIdeal,label="MSD-ideal")
 pl.legend(loc=0)
@@ -52,11 +55,10 @@ mc=energies.index(min(energies))
 iatoms=atoms[mc]
 ienergy=energies[mc]
 print ienergy
-aa=plotsimulation(basis,iatoms,[na],fig2)
+aa=plotsimulation(basis,iatoms,[natoms],fig2)
 bnd=[[0.0,11.0],[0.0,11.0],[0.0,11.0]]
-halfNeigh=neighbors(iatoms,bnd,1.8,"half")
-
-for a in range(na):
+halfNeigh=neighbors(iatoms,bnd,1.5,"half")
+for a in range(natoms):
     for b in halfNeigh[a]:
         x,y,z=zip(*[iatoms[a],iatoms[b]])
         aa.plot(x,y,z,c="black",lw=1.5)
