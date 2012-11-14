@@ -16,7 +16,7 @@ energies=list()
 volumes=list()
 natoms=0
 
-basis=[[11.0/2,0,0],[0,11.0/2,0],[0,0,11.0/2]]
+
 natoms=int(data[1])
 pos=14+natoms
 for i,line in enumerate(data):
@@ -35,7 +35,7 @@ for i,line in enumerate(data):
         msdIdeal.append(float(line))
 optimE={38:-173.252,76:-402.384,104:-582.038}
 nState=len(msdNeighb)
-
+basis=[[2,0,0],[0,2,0],[0,0,2]]
 #Figure 1: MSD & Energy vs step #
 pl.subplot(211)
 pl.title("%d Atoms"%natoms)
