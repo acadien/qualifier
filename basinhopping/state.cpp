@@ -144,7 +144,7 @@ void copyState(state* a, state* b){ //copies state a on to state b
   if(b->N != a->N)
     allocState(b,a->N);
   b->E=a->E;
-  for(int i=0;i<3*a->N;i++)
+  for(int i=0;i<=3*a->N;i++)
     b->x[i]=a->x[i];
 }
 

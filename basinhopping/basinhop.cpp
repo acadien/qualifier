@@ -3,6 +3,7 @@
 #include <queue>
 #include <string>
 #include "gsl/gsl_math.h"
+#include <string.h>
 //mine
 #include "constants.h"
 #include "random.h"
@@ -14,7 +15,7 @@
 
 using namespace std;
 
-int main(int argc, char **argv){
+int main(int argc, char *argv[]){
   state s;
   state sprime;
   state sideal;
@@ -22,10 +23,16 @@ int main(int argc, char **argv){
 
   //Settings
   int aLen=100;  //how big should the window average be
-  int nAtom=76; //how many atoms
+  int nAtom=atoi(argv[1]); //how many atoms
+  bool MethodA;
+  MethodA=false;
+  char A[]="A";
+  if(!strcmp(argv[2],A))
+    MethodA=true;
+  
   //Basin
   float ftol=0.1; //set the tolerance on basin finding algo methodA
-  bool MethodA=false;
+
   //MC
   int initLoop=1000, hopLoop=5000; //MC loop lengths
   float MCT=0.8;                  //Monte Carlo Temperature
@@ -62,10 +69,23 @@ int main(int argc, char **argv){
   s.E=LJpotPunish(s.x,(void*)args);
   FILE* fp=stdout;
   FILE *logf;
-  if(MethodA)
-    logf = fopen("finalstate_N76_A.dat","w");
-  else
-    logf = fopen("finalstate_N76_B.dat","w");
+  if(MethodA){
+    if(nAtom==38)
+      logf = fopen("finalstate_N38_A.dat","w");
+    if(nAtom==76)
+      logf = fopen("finalstate_N76_A.dat","w");
+    if(nAtom==104)
+      logf = fopen("finalstate_N104_A.dat","w");
+  }
+  else{
+    if(nAtom==38)
+      logf = fopen("finalstate_N38_B.dat","w");
+    if(nAtom==76)
+      logf = fopen("finalstate_N76_B.dat","w");
+    if(nAtom==104)
+      logf = fopen("finalstate_N104_B.dat","w");
+  }
+
 
   //Initialize acceptance queue for dynamically altering variation parameter
   std::queue<int> accepts;
@@ -90,6 +110,8 @@ int main(int argc, char **argv){
     printStateEnergy(&s,fp);
     printStateBounds(&s,fp);
   }
+
+
   printf("Reduced Initial.\n");
   printStateVolume(&s,fp);
   printStateEnergy(&s,fp);
@@ -113,7 +135,7 @@ int main(int argc, char **argv){
   }
 
   //Reoptimize with higher accuracy
-  ftol=1e-4;
+  ftol=1e-3;
   for(int i=0;i<hopLoop;i++){
     printf("%d\n",i);
 
@@ -210,7 +232,7 @@ void MCstep(state* s, state* sprime,void* args,float ftol, float& MCT, float& MC
 	  printf("higher energy didn't take\n");
       }
 
-    if(MethodA and cnt>10 and sprime->E - s->E < 50){
+    if(!MethodA and cnt>10 and sprime->E - s->E < 50){
       copyState(sprime,s);
       //basinPowell(sprime,1.0,LJpot,args);
       accept=true;
