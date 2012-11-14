@@ -107,8 +107,8 @@ void basinPowell(state* s,float ftol,float (*func)(float [], void*),void* args){
 
 void basinJiggle(state* s, float (*func)(float [], void*),void* args){
   //Settings
-  int m=s->N*10;
-  int k=50;
+  int m=s->N*100;
+  int k=2000;
 
   //Initialize
   state* sp=((ARGST*)args)->sp;
@@ -120,28 +120,40 @@ void basinJiggle(state* s, float (*func)(float [], void*),void* args){
 
   int tryCount=0,failCount=0;
   float *x=spp->x;
-
+  int index,maxmove;
   copyState(s,sp);
   while(failCount < k and tryCount++ < m){
     
     oldE=sp->E;
     
     //Perturb
-    for(int i=1;i<=3*N;i++)
-      if(mrand()>0.7)
-	x[i]=sp->x[i]+(mrand()-0.5)*2*alpham;
-    
+    maxmove=(int)(mrand()*0.05*N*3)+1;
+    for(int i=0;i<maxmove;i++){
+      index=(int)(mrand()*N*3)+1;
+      x[index]=sp->x[index]+(mrand()-0.5)*2*alpham;
+    }
+
     spp->E=func(x,args);
 
-    if(oldE > spp->E)
+    if(oldE > spp->E){
       copyState(spp,sp);
-    else
+      failCount=0;
+      alpham/=0.99;
+      //printf("|");
+    }
+    else{
       failCount++;
-
+      alpham*=0.995;
+      //printf(".");
+    }
   }
-  if(sp->E<1000000000)
+  printf("%f %f %f ",alpham,sp->E,s->E);
+  if(sp->E <= s->E)
     copyState(sp,s);
-  else
+  else{
     printf("not copying back due to mal-formed energy, buggy sorry...\n");
+    exit(0);
+  }
   recenter(s);
+  printf("%f\n",s->E);
 }

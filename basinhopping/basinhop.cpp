@@ -22,14 +22,14 @@ int main(int argc, char **argv){
 
   //Settings
   int aLen=100;  //how big should the window average be
-  int nAtom=104; //how many atoms
+  int nAtom=76; //how many atoms
   //Basin
   float ftol=0.1; //set the tolerance on basin finding algo methodA
-  bool MethodA=true;
+  bool MethodA=false;
   //MC
   int initLoop=1000, hopLoop=5000; //MC loop lengths
   float MCT=0.8;                  //Monte Carlo Temperature
-  float MCalpha=0.30;             //Monte Carlo initial jump length
+  float MCalpha=0.20;             //Monte Carlo initial jump length
   
   //Initialize random numbers (mersenne twist)
   initrng();
@@ -52,7 +52,7 @@ int main(int argc, char **argv){
     allocState(&(basins[i]),nAtom);
   ARGST *args=(ARGST*)malloc(sizeof(ARGST));
   args->N=s.N;
-  args->alpham=0.05;
+  args->alpham=0.2;
   args->sp=(state*)malloc(sizeof(state));
   args->spp=(state*)malloc(sizeof(state));
   initState(args->sp,nAtom);
@@ -63,9 +63,9 @@ int main(int argc, char **argv){
   FILE* fp=stdout;
   FILE *logf;
   if(MethodA)
-    logf = fopen("finalstate_N104_A_2.dat","w");
+    logf = fopen("finalstate_N76_A.dat","w");
   else
-    logf = fopen("finalstate_N38_B_0.dat","w");
+    logf = fopen("finalstate_N76_B.dat","w");
 
   //Initialize acceptance queue for dynamically altering variation parameter
   std::queue<int> accepts;
@@ -120,7 +120,7 @@ int main(int argc, char **argv){
     copyState(&(basins[i]),&sprime);
 
     //if(MethodA)     //Method A
-      basinPowell(&sprime,ftol,LJpot,(void*)args);
+    basinPowell(&sprime,ftol,LJpot,(void*)args);
     //else            //Method B
     //  basinJiggle(&sprime,LJpot,(void*)args);
 
@@ -128,7 +128,8 @@ int main(int argc, char **argv){
       copyState(&sprime,&(basins[i]));
     if(i>0)
       basins[i].msd=msd(&basins[i],&basins[i-1]);
-    basins[i].msdIdeal=rmsd(nAtom,&(basins[i].x[1]),&(sideal.x[1]));
+
+    basins[i].msdIdeal=rmsd(3*nAtom,&(basins[i].x[1]),&(sideal.x[1]));
 
     //Write relevant information to log
     printState(&(basins[i]),logf);
@@ -161,56 +162,59 @@ void MCstep(state* s, state* sprime,void* args,float ftol, float& MCT, float& MC
   //args2.d=0;
 
   state sap=*sprime;
-  
+
+  cubify(s); //Squeeze the structure to be more "cube-like"   
   while(true){
     cnt++;
 
-    cubify(s); //Squeeze the structure to be more "cube-like" 
+    copyState(s,sprime);
 
     //Salt atoms that are outside of sphere boundary
-    salt(s);
+    salt(sprime);
 
     //Step out of local minimum!
     for(int i=0;i<sap.N;i++){
-      sap.x[3*i+1] = s->x[3*i+1]+(mrand()-0.5)*2.0*MCalpha;
-      sap.x[3*i+2] = s->x[3*i+2]+(mrand()-0.5)*2.0*MCalpha;
-      sap.x[3*i+3] = s->x[3*i+3]+(mrand()-0.5)*2.0*MCalpha;
+      sprime->x[3*i+1] += (mrand()-0.5)*2.0*MCalpha;
+      sprime->x[3*i+2] += (mrand()-0.5)*2.0*MCalpha;
+      sprime->x[3*i+3] += (mrand()-0.5)*2.0*MCalpha;
     }
     if(MethodA)
       //basinPowell(&sp,ftol,LJpot,(void*)&args2);
-      basinPowell(&sap,ftol,LJpot,args);
-    else
+      basinPowell(sprime,ftol,LJpot,args);
+    else{
       //basinJiggle(&sp,LJpot,(void*)args2);
-      basinJiggle(&sap,LJpot,args);
-
-    sap.iters=0;
+      basinJiggle(sprime,LJpot,args);
+      //      if(cnt>10){
+	//	basinPowell(sprime,1.0,LJpot,args);
+	//	printf("bleh\n");
+	//}
+    }
+    sprime->iters=0;
 
     //Calculate the Metropolis Criterion
-    float weight=exp( -(sap.E - s->E) / MCT );
+    float weight=exp( -(sprime->E - s->E) / MCT );
     //if(!silent)
-    //printf("old:%4.4f new:%4.4f | expdelE=%4.4f\n",s->E,sap.E,weight);
+    printf("old:%4.4f new:%4.4f | expdelE=%4.4f\n",s->E,sprime->E,weight);
 
     //Monte-Carlo action bam-pow
     bool accept=false;
-    if(sap.E < s->E){
-      copyState(&sap,s);
+    if(sprime->E < s->E){
+      copyState(sprime,s);
       accept=true;
     }else 
       if(mrand()<weight){
-	copyState(&sap,s);
+	copyState(sprime,s);
 	accept=true;
       }else{
 	if(!silent)
 	  printf("higher energy didn't take\n");
       }
 
-    if(cnt>500){
-      if ((sap.E-s->E)<10.){
-      printf("bleh\n");
+    if(MethodA and cnt>10 and sprime->E - s->E < 50){
+      copyState(sprime,s);
+      //basinPowell(sprime,1.0,LJpot,args);
       accept=true;
-      }
-      else
-	printf("doh\n");
+      printf("bleh\n");
     }
 
     //Update the acceptance queue and average acceptance
@@ -226,18 +230,11 @@ void MCstep(state* s, state* sprime,void* args,float ftol, float& MCT, float& MC
     //Update the Monte-Carlo Temperature according to acceptance
     if(accept){
       MCalpha/=alphaRatio;    
-      ((ARGST*)args)->alpham/=0.99;
+      //((ARGST*)args)->alpham/=0.99;
     } else if (MCalpha > alphaStep) {
       MCalpha*=alphaRatio;
-      ((ARGST*)args)->alpham*=0.99;
+      //((ARGST*)args)->alpham*=0.99;
     }
-    
-    //Something is wrong, stuck in this loop, try exploding out of the local minimum
-    //if(cnt%100==0){
-    //  basinPowell(&sap,ftol,LJpot,args);
-    //}
-    //if(!silent)
-    //printf("inside: acceptAvg=%f MCT=%f           MCalpha=%f\n",*acceptAvg,MCT,MCalpha);
 
     if(accept)
       break;
@@ -252,8 +249,8 @@ void loadIdeal(state* sideal,FILE* ifile){
   for(int i=0;i<N;i++){
     dummy=fscanf(ifile,"%f %f %f\n",&x,&y,&z);
     sideal->x[3*i+1]=x;
-    sideal->x[3*i+1]=y;
-    sideal->x[3*i+1]=z;
+    sideal->x[3*i+2]=y;
+    sideal->x[3*i+3]=z;
   }
 }
 
