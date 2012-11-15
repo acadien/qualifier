@@ -22,11 +22,16 @@ powell.c
 mnbrak.c
 
 Several python scripts were written for visualization the results and making graphs to answer posted questions.  The script viz.py takes as its only arguement the location of a log file, e.g.:
+
 ./viz.py ../basinhopping_data/finalstate_N104_A_0.dat.
+
 Which prints total energy and plots the lowest energy atomic structure with bonded neighbors highlighted by a line.
 The others can be run as follows
-./viz12.py <# atoms>
-./viz3.py <#atoms>
-./viz4.py <#atoms>
-./viz5.py -no args-qualifier
-=========
+
+./viz12.py [#atoms] //prints energies and rmsd(i)
+
+./viz3.py [#atoms]  //plots phase space
+
+./viz4.py [#atoms]  //plots density of states
+
+./viz5.py -no args- //plots min-rmsd(i) vs average rmsd-neighbor
