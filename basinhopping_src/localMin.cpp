@@ -105,6 +105,7 @@ void basinPowell(state* s,float ftol,float (*func)(float [], void*),void* args){
   s->E=func(s->x,args);
 }
 
+//Method B
 void basinJiggle(state* s, float (*func)(float [], void*),void* args){
   //Settings
   int m=s->N*100;
@@ -135,16 +136,14 @@ void basinJiggle(state* s, float (*func)(float [], void*),void* args){
 
     spp->E=func(x,args);
 
-    if(oldE > spp->E){
+    if(oldE > spp->E){ //Success
       copyState(spp,sp);
       failCount=0;
       alpham/=0.99;
-      //printf("|");
     }
-    else{
+    else{ //Failure
       failCount++;
       alpham*=0.995;
-      //printf(".");
     }
   }
   printf("%f %f %f ",alpham,sp->E,s->E);

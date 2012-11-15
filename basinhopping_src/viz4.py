@@ -57,19 +57,21 @@ optimE={38:-173.928,76:-402.894,104:-582.086}
 nState=5000
 
 nAtom=int(sys.argv[1])
-logAnames=["data/finalstate_N"+str(nAtom)+"_A_"+str(i)+".dat" for i in range(5)]
-logBnames=["data/finalstate_N"+str(nAtom)+"_B_"+str(i)+".dat" for i in range(5)]
+logAnames=["../basinhopping_data/finalstate_N"+str(nAtom)+"_A_"+str(i)+".dat" for i in range(5)]
+logBnames=["../basinhopping_data/finalstate_N"+str(nAtom)+"_B_"+str(i)+".dat" for i in range(5)]
 
 #Method A
 energiesA,volumesA,atomsA,msdNA,msdIA=zip(*map(loadData,logAnames))
 energiesB,volumesB,atomsB,msdNB,msdIB=zip(*map(loadData,logBnames))
 pl.subplot(121)
-pl.hist(msdNA)
+pl.xlim([0,0.2])
+pl.hist(msdNA,20)
 pl.xlabel("$\Delta RMS-Neighbor$")
 pl.ylabel("Count")
 pl.title(sys.argv[1]+" Atoms, Method A")
 pl.subplot(122)
-pl.hist(msdNB)
+pl.xlim([0,0.5])
+pl.hist(msdNB,20)
 pl.xlabel("$\Delta RMS-Neighbor$")
 pl.ylabel("Count")
 pl.title(sys.argv[1]+" Atoms, Method B")

@@ -58,8 +58,8 @@ nState=5000
 #logAnames={{}}
 lognames={}
 for k in [38,76,104]:
-    lognames[(k,"A")]=["data/finalstate_N"+str(k)+"_A_"+str(i)+".dat" for i in range(5)]
-    lognames[(k,"B")]=["data/finalstate_N"+str(k)+"_B_"+str(i)+".dat" for i in range(5)]
+    lognames[(k,"A")]=["../basinhopping_data/finalstate_N"+str(k)+"_A_"+str(i)+".dat" for i in range(5)]
+    lognames[(k,"B")]=["../basinhopping_data/finalstate_N"+str(k)+"_B_"+str(i)+".dat" for i in range(5)]
 gs=[gridspec.GridSpec(1, 1),gridspec.GridSpec(1, 1)]
 gs[0].update(left=0.1, right=0.52)
 gs[1].update(left=0.54, right=0.96)
@@ -93,7 +93,7 @@ for k in [38,76,104]:
 
 for i,h in enumerate(["A","B"]):
     pl.sca(a[i])
-    pl.axis([0,0.2,0,4])    
+    pl.axis([0,0.15,0,3.5])    
     pl.xlabel("$\overline{\Delta RMS}_{Neighbor}$",size=14)
     if i==0:
         pl.xticks(pl.xticks()[0][:-1])
